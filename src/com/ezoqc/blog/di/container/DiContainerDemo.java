@@ -26,7 +26,7 @@ public class DiContainerDemo extends DiContainer {
 
         this.classScanner.findAllClassHavingAnnotation(rootPackage, Injectable.class)
                 .forEach(currentClass -> {
-                    Class<Injectable> implementation = this.classScanner.findImplementationOf(Injectable.class);
+                    Class implementation = this.classScanner.findImplementationOf(rootPackage, currentClass);
 
                     this.registry.put(currentClass, null);
                     this.implementations.put(currentClass, implementation);
@@ -35,14 +35,12 @@ public class DiContainerDemo extends DiContainer {
 
     @Override
     public <T> T getClassInstance(Class<T> testAppClass) {
-        T instance = null;
+        Object instance = this.registry.get(testAppClass);
 
-        Injectable injectable = this.registry.get(testAppClass);
+        if (instance == null) {
+            instance = this.implementations.get(testAppClass);
 
-        if (injectable == null) {
-            Class<Injectable> injectableType = this.implementations.get(testAppClass);
-
-            if (injectableType == null) {
+            if (instance == null) {
                 try {
                     instance = testAppClass.newInstance();
                 } catch (IllegalAccessException | InstantiationException e) {
@@ -52,17 +50,22 @@ public class DiContainerDemo extends DiContainer {
             }
         }
 
-        if (injectable != null) {
-           this.fieldsScanner.findAllFieldsHavingAnnotation(injectable, Injected.class)
+
+
+        if (instance != null) {
+            final Object instancePassedToLambda = instance;
+            this.fieldsScanner.findAllFieldsHavingAnnotation(instance, Injected.class)
                    .forEach(currentField -> {
                        boolean visibilityOfField = currentField.isAccessible();
 
                        currentField.setAccessible(true);
+
                        try {
-                           currentField.set(injectable, this.getClassInstance(currentField.getDeclaringClass()));
+                           currentField.set(instancePassedToLambda, this.getClassInstance(currentField.getType()));
                        } catch (IllegalAccessException e) {
                            e.printStackTrace();
                        }
+
                        currentField.setAccessible(visibilityOfField);
 
 
@@ -70,6 +73,6 @@ public class DiContainerDemo extends DiContainer {
         }
 
 
-        return instance;
+        return (T) instance;
     }
 }

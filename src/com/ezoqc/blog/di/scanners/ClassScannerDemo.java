@@ -3,30 +3,35 @@ package com.ezoqc.blog.di.scanners;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class ClassScannerDemo extends ClassScanner {
     @Override
-    public <T> List<Class> findAllClassHavingAnnotation(String rootPackage, Class<T> injectableClass) {
+    public <T> List<Class> findAllClassHavingAnnotation(String rootPackage, Class<T> annotation) {
         List<Class> returned = new LinkedList<>();
         try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Enumeration<URL> urls = classLoader.getResources(rootPackage);
+            Enumeration<URL> urls = listFilesInClassLoader(rootPackage);
 
             List<File> dirs = new LinkedList<>();
             while(urls.hasMoreElements()) {
                 URL next = urls.nextElement();
                 File curDir = new File(next.getFile());
-                returned.addAll(this.findClassesInPackage(rootPackage, curDir));
+                for (Class curClass : this.findClassesInPackage(rootPackage, curDir)) {
+                    if (curClass.isAnnotationPresent(annotation)) {
+                        returned.add(curClass);
+                    }
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         return returned;
+    }
+
+    private Enumeration<URL> listFilesInClassLoader(String rootPackage) throws IOException {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        return classLoader.getResources(rootPackage);
     }
 
     private <T> Collection<Class> findClassesInPackage(String packageName, File curDir) {
@@ -53,7 +58,27 @@ public class ClassScannerDemo extends ClassScanner {
     }
 
     @Override
-    public <T> Class<T> findImplementationOf(Class<T> injectableClass) {
-        return null;
+    public <T> Class<? extends T> findImplementationOf(String rootPackage, Class<T> injectableClass) {
+        Class returned = null;
+        Enumeration<URL> urls = null;
+        try {
+            urls = this.listFilesInClassLoader(rootPackage);
+            while(urls.hasMoreElements()) {
+                URL next = urls.nextElement();
+                File curDir = new File(next.getFile());
+                for (Class curClass : this.findClassesInPackage(rootPackage, curDir)) {
+                    if (Arrays.asList(curClass.getInterfaces()).contains(injectableClass)) {
+                        returned = curClass;
+                        break;
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        return returned;
     }
 }

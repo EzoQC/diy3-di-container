@@ -8,5 +8,5 @@ public abstract class ClassScanner {
     }
 
     public abstract <T> List<Class> findAllClassHavingAnnotation(String rootPackage, Class<T> injectableClass);
-    public abstract <T> Class<T> findImplementationOf(Class<T> injectableClass);
+    public abstract <T> Class<? extends T> findImplementationOf(String rootPackage, Class<T> injectableClass);
 }
