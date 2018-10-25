@@ -8,11 +8,11 @@ import com.ezoqc.blog.di.container.DiContainer;
 import java.util.List;
 
 public class TestApp {
-    public static void main(String... argz) {
-        DiContainer container = DiContainer.getInstance("");
-        TestApp application = container.getClassInstance(TestApp.class);
-        application.doSomething();
-    }
+public static void main(String... argz) {
+    DiContainer container = DiContainer.getInstance("com.ezoqc.blog.di");
+    TestApp application = container.getClassInstance(TestApp.class);
+    application.doSomething();
+}
 
     public TestApp() {
         System.out.println("Creating application...");
@@ -22,8 +22,9 @@ public class TestApp {
     private UserService userService;
 
     private void doSomething() {
+        System.out.println("Application started - Doing Something...");
         List<User> users = this.userService.findAllUsers();
         users.forEach(x -> System.out.println(x));
+        System.out.println("Application ended - Bye!");
     }
-
 }
